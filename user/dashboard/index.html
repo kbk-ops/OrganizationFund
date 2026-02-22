@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 
-<head>  
+<head>
   <meta charset="UTF-8">
   <title>Dashboard</title>
   <link rel="icon" href="../../Kasangga New Logo Small.png" type="image/x-icon">
@@ -25,8 +25,8 @@
 
     <div id="loader" class="loader-overlay">
       <div class="spinner"></div>
-  </div>
-    
+    </div>
+
     <div id="homeTab" class="tab-content active">
       <div class="greeting">
         <img id="profilePic" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><circle cx='100' cy='100' r='100' fill='%23e0e0e0'/><circle cx='100' cy='80' r='35' fill='%239e9e9e'/><path d='M40 160c0-30 25-50 60-50s60 20 60 50' fill='%239e9e9e'/></svg>" alt="Profile Picture" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 200 200&quot;><circle cx=&quot;100&quot; cy=&quot;100&quot; r=&quot;100&quot; fill=&quot;%23e0e0e0&quot;/><circle cx=&quot;100&quot; cy=&quot;80&quot; r=&quot;35&quot; fill=&quot;%239e9e9e&quot;/><path d=&quot;M40 160c0-30 25-50 60-50s60 20 60 50&quot; fill=&quot;%239e9e9e&quot;/></svg>'" width="60" height="60" class="profile-pic" />
@@ -42,9 +42,7 @@
     </div>
 
     <div id="contributionTab" class="tab-content">
-      <select id="yearFilter" onchange="loadContributions()">
-        <option value="all">All</option>
-        <option value="2026">2026</option>
+      <select id="yearFilter" onchange="renderContributions()">
       </select>
 
       <table>
@@ -53,6 +51,7 @@
             <th>Month</th>
             <th>Amount</th>
             <th>Posted</th>
+            <th>Received by</th>
           </tr>
         </thead>
         <tbody id="contriBody"></tbody>
@@ -60,6 +59,7 @@
           <tr>
             <th>Total</th>
             <th id="totalAmt"></th>
+            <th></th>
             <th></th>
           </tr>
         </tfoot>
