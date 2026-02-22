@@ -3,7 +3,7 @@
 // ================================
 (function () {
 
-  const LOGIN_URL = "../../index.html";
+  const LOGIN_URL = "https://kbk-ops.github.io/kbkai/";
   const IDLE_LIMIT = 2 * 60 * 1000; // 2 minutes
   let idleTimer;
 
