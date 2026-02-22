@@ -1,42 +1,33 @@
 const memberID = sessionStorage.getItem("memberID");
-if (!memberID) window.location.replace("../index.html");
+if (!memberID) window.location.replace("https://kbk-ops.github.io/kbkai/");
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbzDE01iHOXt_0RQ9uUSPnc1uv833pH9wjwqIjkyQSBgw4U-0_vLUWErQi2iP-QH_2A4/exec";
 
-/* ------------------ LOADER ------------------ */
+let allContributions = [];
+let currentUser = null;
+
+/* ---------------- LOADER ---------------- */
 function showLoader() {
   document.getElementById("loader").style.display = "flex";
 }
-
 function hideLoader() {
   document.getElementById("loader").style.display = "none";
 }
 
-/* ------------------ DEFAULT PROFILE IMAGE ------------------ */
+/* ---------------- PROFILE IMAGE ---------------- */
 function formatImage(link) {
-  const defaultProfile =
-    "data:image/svg+xml;utf8," +
-    encodeURIComponent(`
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>
-      <circle cx='100' cy='100' r='100' fill='#e0e0e0'/>
-      <circle cx='100' cy='80' r='35' fill='#9e9e9e'/>
-      <path d='M40 160c0-30 25-50 60-50s60 20 60 50' fill='#9e9e9e'/>
-    </svg>
-  `);
-
-  if (!link || link.trim() === "") return defaultProfile;
-
-  const idMatch =
-    link.match(/\/d\/([a-zA-Z0-9_-]+)/) || link.match(/id=([a-zA-Z0-9_-]+)/);
-  if (idMatch && idMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/${idMatch[1]}=s200`;
+  if (!link) return "";
+  const match =
+    link.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+    link.match(/id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://lh3.googleusercontent.com/d/${match[1]}=s200`;
   }
-
   return link;
 }
 
-/* ------------------ TAB NAVIGATION ------------------ */
+/* ---------------- TAB ---------------- */
 function showTab(id) {
   document
     .querySelectorAll(".tab-content")
@@ -44,21 +35,122 @@ function showTab(id) {
   document.getElementById(id).classList.add("active");
 }
 
-function go(page) {
-  window.location.replace(page);
-}
-
-function initDashboardTabs() {
-  const tabs = document.querySelectorAll(".bottombar div, .center-btn");
-  tabs.forEach((tab) =>
-    tab.addEventListener("click", (e) => {
-      const targetTab = e.currentTarget.dataset.tab;
-      if (targetTab) showTab(targetTab);
-    })
+/* ---------------- LOAD PROFILE ONLY ---------------- */
+function loadProfile(members) {
+  currentUser = members.find(
+    (r) => String(r.id).trim() === String(memberID).trim()
   );
+
+  const hour = new Date().getHours();
+  const greet =
+    hour < 12
+      ? "Good Morning"
+      : hour < 18
+      ? "Good Afternoon"
+      : "Good Evening";
+
+  document.getElementById("greet").textContent =
+    `${greet}, ${currentUser?.firstName || "Member"}!`;
+
+  document.getElementById("profilePic").src =
+    formatImage(currentUser?.profilePic);
 }
 
-/* ------------------ LOAD DASHBOARD DATA ------------------ */
+/* ---------------- BUILD YEAR FILTER ---------------- */
+function buildYearFilter() {
+  const yearSelect = document.getElementById("yearFilter");
+
+  const memberContri = allContributions.filter(
+    (r) => String(r.memberID).trim() === String(memberID).trim()
+  );
+
+  const years = [...new Set(
+    memberContri.map(r => String(r.year).trim())
+  )].sort((a, b) => b - a);
+
+  yearSelect.innerHTML = "<option value='all'>All</option>";
+
+  years.forEach(y => {
+    yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+  });
+}
+
+/* ---------------- RENDER CONTRIBUTIONS ONLY ---------------- */
+function renderContributions() {
+  const yearSelect = document.getElementById("yearFilter");
+  const tableBody = document.getElementById("contriBody");
+  const totalField = document.getElementById("totalAmt");
+  const tableHead = document.querySelector("#contributionTab thead");
+  const tableFoot = document.querySelector("#contributionTab tfoot");
+
+  const memberContri = allContributions.filter(
+    (r) => String(r.memberID).trim() === String(memberID).trim()
+  );
+
+  // NO CONTRIBUTIONS AT ALL
+  if (memberContri.length === 0) {
+
+    yearSelect.style.display = "none";
+    tableHead.style.display = "none";
+    tableFoot.style.display = "none";
+
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4" style="padding:25px; text-align:justify;">
+          <strong>Hello ${currentUser?.firstName || "Member"},</strong><br><br>
+          Our records show that you are not yet paying our monthly organization dues.
+          To remain a member in good standing and continue enjoying all member benefits,
+          please coordinate with your Barangay Officers as soon as possible.<br><br>
+          Thank you for your prompt attention.
+        </td>
+      </tr>
+    `;
+
+    totalField.textContent = "";
+    return;
+  }
+
+  // ✅ IF HAS CONTRIBUTIONS — SHOW EVERYTHING
+  yearSelect.style.display = "block";
+  tableHead.style.display = "";
+  tableFoot.style.display = "";
+
+  const selectedYear = yearSelect.value || "all";
+
+  let total = 0;
+  let html = "";
+
+  const filtered = memberContri.filter(r =>
+    selectedYear === "all" ||
+    String(r.year).trim() === String(selectedYear).trim()
+  );
+
+  filtered.forEach(r => {
+    const dateObj = new Date(r.posted);
+    const formattedDate =
+      ("0" + (dateObj.getMonth() + 1)).slice(-2) +
+      "/" +
+      ("0" + dateObj.getDate()).slice(-2) +
+      "/" +
+      dateObj.getFullYear();
+
+    total += Number(r.amount);
+
+    html += `
+      <tr>
+        <td>${r.month}</td>
+        <td>${Number(r.amount).toLocaleString()}</td>
+        <td>${formattedDate}</td>
+        <td>${r.receiveBy || ""}</td>
+      </tr>
+    `;
+  });
+
+  tableBody.innerHTML = html;
+  totalField.textContent = total.toLocaleString();
+}
+
+/* ---------------- INITIAL DASHBOARD ---------------- */
 function loadDashboard() {
   showLoader();
 
@@ -73,61 +165,21 @@ function loadDashboard() {
     }).then((r) => r.json())
   ])
     .then(([members, contributions]) => {
-      // ---------------- PROFILE & GREETING ----------------
-      const user = members.find((r) => r.id == memberID);
-      const profilePic = formatImage(user?.profilePic);
-      const profileImgEl = document.getElementById("profilePic");
-      profileImgEl.src = profilePic;
-      profileImgEl.alt = "Profile Picture";
 
-      const hour = new Date().getHours();
-      const greet =
-        hour < 12
-          ? "Good Morning"
-          : hour < 18
-          ? "Good Afternoon"
-          : "Good Evening";
-      document.getElementById("greet").textContent = `${greet}, ${
-        user?.firstName || "Member"
-      }!`;
+      allContributions = contributions;
 
-      // ---------------- CONTRIBUTIONS TABLE ----------------
-      const year = document.getElementById("yearFilter").value;
-      let total = 0;
-      let html = "";
-
-      contributions
-        .filter((r) => r.memberID == memberID)
-        .filter((r) => year === "all" || r.year == year)
-        .forEach((r) => {
-          const dateObj = new Date(r.posted);
-          const formattedDate =
-            ("0" + (dateObj.getMonth() + 1)).slice(-2) +
-            "/" +
-            ("0" + dateObj.getDate()).slice(-2) +
-            "/" +
-            dateObj.getFullYear();
-
-          total += Number(r.amount);
-
-          html += `<tr>
-      <td>${r.month}</td>
-      <td>${r.amount}</td>
-      <td>${formattedDate}</td>
-    </tr>`;
-        });
-
-      document.getElementById("contriBody").innerHTML = html;
-      document.getElementById("totalAmt").textContent = total;
-    })
-    .catch((err) => {
-      console.error(err);
-      document.getElementById("greet").textContent = "Hello, Member!";
-      document.getElementById("profilePic").src = formatImage("");
+      loadProfile(members);
+      buildYearFilter();
+      renderContributions();
     })
     .finally(() => hideLoader());
 }
 
-// ------------------ INITIALIZE ------------------
-initDashboardTabs();
+/* ---------------- FILTER CHANGE ---------------- */
+document
+  .getElementById("yearFilter")
+  .addEventListener("change", renderContributions);
+
+/* ---------------- START ---------------- */
 loadDashboard();
+initDashboardTabs();
